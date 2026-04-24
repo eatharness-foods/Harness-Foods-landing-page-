@@ -1,5 +1,6 @@
 {
   "name": "Harness Foods",
-  "description": "Premium meal prep service tailored for chronic illness management with AI-powered personalized suggestions.",
+  "description": "Premium, health-focused meal prep service specifically designed for chronic illness management. We offer dietetic-approved, AIP-friendly, and anti-inflammatory meals personalized to your health goals using AI-powered nutritional suggestions. Delivery available across the Greater Toronto Area (GTA).",
+  "keywords": ["meal prep", "chronic illness diet", "AIP friendly", "anti-inflammatory meals", "healthy meal delivery", "GTA meal prep", "custom nutrition", "AI meal planning", "dietician approved", "health conscious food"],
   "requestFramePermissions": []
 }
