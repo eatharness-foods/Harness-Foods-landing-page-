@@ -123,21 +123,20 @@ function Typewriter({ phrases }: { phrases: string[] }) {
 
 export default function App() {
   const [step, setStep] = useState(0);
+  const [servings, setServings] = useState<Record<number, number>>({});
+
+  const handleServingChange = (mealIndex: number, delta: number) => {
+    setServings(prev => {
+      const current = prev[mealIndex] || 1;
+      const next = Math.max(1, current + delta);
+      return { ...prev, [mealIndex]: next };
+    });
+  };
   const [isSurveyOpen, setIsSurveyOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<MealIdea[] | null>(null);
   const [expandedMealIndex, setExpandedMealIndex] = useState<number | null>(null);
-  const [servings, setServings] = useState<Record<number, number>>({});
   const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
-  
-  const getServings = (index: number) => servings[index] || 1;
-  const updateServings = (e: any, index: number, delta: number) => {
-    e.stopPropagation();
-    setServings(prev => ({
-      ...prev,
-      [index]: Math.max(1, (prev[index] || 1) + delta)
-    }));
-  };
   const [formData, setFormData] = useState<SurveyData>({
     name: '',
     email: '',
@@ -200,13 +199,30 @@ export default function App() {
     setIsEmailLoading(true);
     setEmailError(null);
     try {
+      const scaledResults = results.map((meal, index) => {
+        const mealServings = servings[index] || 1;
+        return {
+          ...meal,
+          nutrition: meal.nutrition ? {
+            calories: Math.round(meal.nutrition.calories * mealServings),
+            protein: Math.round(meal.nutrition.protein * mealServings),
+            carbs: Math.round(meal.nutrition.carbs * mealServings),
+            fats: Math.round(meal.nutrition.fats * mealServings),
+          } : undefined,
+          ingredients: meal.ingredients.map(ing => ({
+            ...ing,
+            amount: Math.round((ing.amount * mealServings) * 100) / 100
+          }))
+        };
+      });
+
       const response = await fetch('/api/send-recipes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: formData.email,
           name: formData.name,
-          recipes: results
+          recipes: scaledResults
         })
       });
 
@@ -260,19 +276,22 @@ export default function App() {
 
       if (meal.nutrition) {
         doc.setFont("helvetica", "bold");
-        doc.text("Nutrition (per serving):", 20, yPos);
+        const mealServings = servings[index] || 1;
+        doc.text(`Nutrition (${mealServings} Serving${mealServings > 1 ? 's' : ''}):`, 20, yPos);
         yPos += 6;
         doc.setFont("helvetica", "normal");
-        doc.text(`Calories: ${meal.nutrition.calories} kcal | Protein: ${meal.nutrition.protein}g | Carbs: ${meal.nutrition.carbs}g | Fats: ${meal.nutrition.fats}g`, 20, yPos);
+        doc.text(`Calories: ${Math.round(meal.nutrition.calories * mealServings)} kcal | Protein: ${Math.round(meal.nutrition.protein * mealServings)}g | Carbs: ${Math.round(meal.nutrition.carbs * mealServings)}g | Fats: ${Math.round(meal.nutrition.fats * mealServings)}g`, 20, yPos);
         yPos += 10;
       }
 
       doc.setFont("helvetica", "bold");
-      doc.text("Ingredients:", 20, yPos);
+      const mealServings = servings[index] || 1;
+      doc.text(`Ingredients (${mealServings} Serving${mealServings > 1 ? 's' : ''}):`, 20, yPos);
       yPos += 6;
       doc.setFont("helvetica", "normal");
       meal.ingredients.forEach(ing => {
-        doc.text(`• ${ing.amount} ${ing.unit} ${ing.name}`, 25, yPos);
+        const amount = Math.round((ing.amount * mealServings) * 100) / 100;
+        doc.text(`• ${amount} ${ing.unit} ${ing.name}`, 25, yPos);
         yPos += 6;
       });
       yPos += 4;
@@ -377,7 +396,7 @@ export default function App() {
                         <label className="text-sm font-semibold text-slate-700">Name</label>
                         <input 
                           type="text" 
-                          placeholder="Alex"
+                          placeholder="John Doe"
                           className="input-field"
                           value={formData.name}
                           onChange={e => setFormData({...formData, name: e.target.value})}
@@ -388,7 +407,7 @@ export default function App() {
                         <label className="text-sm font-semibold text-slate-700">Email address</label>
                         <input 
                           type="email" 
-                          placeholder="alex@email.com"
+                          placeholder="johndoe@gmail.com"
                           className="input-field"
                           value={formData.email}
                           onChange={e => setFormData({...formData, email: e.target.value})}
@@ -465,7 +484,6 @@ export default function App() {
                     >
                       <Loader2 className="w-16 h-16 text-primary animate-spin mb-6" />
                       <h3 className="text-3xl font-display font-bold text-slate-800 mb-3">Crafting your meal plan...</h3>
-                      <p className="text-slate-500 text-lg max-w-sm mx-auto">This may take a few moments as our AI analyzes your profile to generate 3 perfect, chef-inspired meals.</p>
                     </motion.div>
                   )}
 
@@ -509,7 +527,7 @@ export default function App() {
                           <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
                           <input 
                             type="text" 
-                            placeholder="Full Name"
+                            placeholder="John Doe"
                             className="input-field pl-12"
                             value={formData.name}
                             onChange={e => setFormData({...formData, name: e.target.value})}
@@ -519,7 +537,7 @@ export default function App() {
                           <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
                           <input 
                             type="email" 
-                            placeholder="Email Address"
+                            placeholder="johndoe@gmail.com"
                             className="input-field pl-12"
                             value={formData.email}
                             onChange={e => setFormData({...formData, email: e.target.value})}
@@ -789,9 +807,6 @@ export default function App() {
                           <CheckCircle2 className="w-12 h-12" />
                         </div>
                         <h2 className="text-2xl sm:text-4xl font-display font-bold mb-4">Your Custom Meal Plan is Ready!</h2>
-                        <p className="text-slate-600 mb-8 text-base sm:text-lg">
-                          Based on your profile, our AI curated these 3 meals to support your health.
-                        </p>
                       </div>
 
                       <div className="flex flex-col gap-6 mb-12">
@@ -818,7 +833,16 @@ export default function App() {
                                 </div>
                                 <div>
                                   <h3 className="text-lg sm:text-2xl font-bold text-slate-900 leading-tight">{meal.title}</h3>
-                                  <p className="text-sm sm:text-lg text-slate-500 line-clamp-1">{meal.description}</p>
+                                  <p className="text-sm sm:text-lg text-slate-500 line-clamp-1 mb-2">{meal.description}</p>
+                                  {meal.tags && meal.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                      {meal.tags.map((tag, tagIndex) => (
+                                        <span key={tagIndex} className="px-2 py-1 text-[10px] sm:text-xs font-bold text-primary bg-primary/10 rounded-full uppercase tracking-wide">
+                                          {tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                               {expandedMealIndex === i ? <ChevronUp className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400" /> : <ChevronDown className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400" />}
@@ -845,25 +869,44 @@ export default function App() {
                                       
                                       {meal.nutrition && (
                                         <div>
-                                          <h4 className="flex items-center gap-2 font-bold text-slate-900 mb-4 uppercase tracking-wider text-sm">
-                                            <Scale className="w-4 h-4" /> Nutritional Information
-                                          </h4>
+                                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                                            <h4 className="flex items-center gap-2 font-bold text-slate-900 uppercase tracking-wider text-sm">
+                                              <Scale className="w-4 h-4" /> Nutritional Information
+                                            </h4>
+                                            <div className="flex items-center gap-3 bg-slate-50 rounded-full px-3 py-1 border border-slate-200 self-start sm:self-auto">
+                                              <span className="text-xs font-bold text-slate-500 uppercase">Servings:</span>
+                                              <button 
+                                                onClick={(e) => { e.stopPropagation(); handleServingChange(i, -1); }}
+                                                className="w-6 h-6 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-500 hover:bg-slate-100 disabled:opacity-50"
+                                                disabled={(servings[i] || 1) <= 1}
+                                              >
+                                                -
+                                              </button>
+                                              <span className="text-sm font-bold w-4 text-center">{servings[i] || 1}</span>
+                                              <button 
+                                                onClick={(e) => { e.stopPropagation(); handleServingChange(i, 1); }}
+                                                className="w-6 h-6 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-500 hover:bg-slate-100"
+                                              >
+                                                +
+                                              </button>
+                                            </div>
+                                          </div>
                                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                             <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex flex-col items-center">
                                               <span className="text-[10px] font-bold text-slate-400 uppercase">Calories</span>
-                                              <span className="text-sm font-bold text-slate-700">{meal.nutrition.calories}</span>
+                                              <span className="text-sm font-bold text-slate-700">{Math.round(meal.nutrition.calories * (servings[i] || 1)).toLocaleString()}</span>
                                             </div>
                                             <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex flex-col items-center">
                                               <span className="text-[10px] font-bold text-slate-400 uppercase">Protein</span>
-                                              <span className="text-sm font-bold text-slate-700">{meal.nutrition.protein}g</span>
+                                              <span className="text-sm font-bold text-slate-700">{Math.round(meal.nutrition.protein * (servings[i] || 1))}g</span>
                                             </div>
                                             <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex flex-col items-center">
                                               <span className="text-[10px] font-bold text-slate-400 uppercase">Carbs</span>
-                                              <span className="text-sm font-bold text-slate-700">{meal.nutrition.carbs}g</span>
+                                              <span className="text-sm font-bold text-slate-700">{Math.round(meal.nutrition.carbs * (servings[i] || 1))}g</span>
                                             </div>
                                             <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex flex-col items-center">
                                               <span className="text-[10px] font-bold text-slate-400 uppercase">Fats</span>
-                                              <span className="text-sm font-bold text-slate-700">{meal.nutrition.fats}g</span>
+                                              <span className="text-sm font-bold text-slate-700">{Math.round(meal.nutrition.fats * (servings[i] || 1))}g</span>
                                             </div>
                                           </div>
                                         </div>
@@ -871,13 +914,13 @@ export default function App() {
 
                                       <div>
                                         <h4 className="flex items-center gap-2 font-bold text-slate-900 mb-4 uppercase tracking-wider text-sm">
-                                          <Utensils className="w-4 h-4" /> Ingredients (1 Serving)
+                                          <Utensils className="w-4 h-4" /> Ingredients ({(servings[i] || 1)} Serving{((servings[i] || 1) > 1) ? 's' : ''})
                                         </h4>
                                         <div className="space-y-3">
                                           {meal.ingredients.map((ing, j) => (
                                             <div key={j} className="flex justify-between items-center py-2 border-b border-slate-50">
                                               <span className="text-slate-700">{ing.name}</span>
-                                              <span className="font-bold text-slate-400">{ing.amount} {ing.unit}</span>
+                                              <span className="font-bold text-slate-400">{Math.round((ing.amount * (servings[i] || 1)) * 100) / 100} {ing.unit}</span>
                                             </div>
                                           ))}
                                         </div>
@@ -932,7 +975,7 @@ export default function App() {
                         </button>
                         <button 
                           onClick={() => {
-                            setStep(1);
+                            setStep(2);
                             setResults(null);
                             setIsEmailSent(false);
                             setEmailError(null);

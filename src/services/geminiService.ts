@@ -31,6 +31,7 @@ export interface MealIdea {
     carbs: number;
     fats: number;
   };
+  tags: string[];
 }
 
 export async function generateMealSuggestions(data: SurveyData): Promise<MealIdea[]> {
@@ -55,9 +56,10 @@ export async function generateMealSuggestions(data: SurveyData): Promise<MealIde
     - title: String (catchy name of the meal)
     - description: String (brief overview of the meal)
     - benefits: String (A 'Why it works' explanation detailing exactly how this meal benefits their specific health goals and conditions. You MUST explicitly name the ingredients and explain the specific benefit each provides for their condition: ${healthGoalsStr})
+    - tags: Array of Strings (3-5 relevant tags describing the meal, e.g., 'low-carb', 'high-protein', 'anti-inflammatory', 'gluten-free', 'dairy-free')
     - ingredients: Array of Objects (each with 'amount' (number), 'unit' (string, e.g., 'cup', 'tbsp', 'oz', 'whole', use '' if none), 'name' (string, the ingredient name)). IMPORTANT: Scale the ingredients for EXACTLY 1 serving.
     - instructions: Array of Strings (step-by-step preparation instructions)
-    - nutrition: Object with calories (number), protein (number), carbs (number), fats (number)
+    - nutrition: Object with calories (number), protein (number), carbs (number), fats (number) scaled for EXACTLY 1 serving.
   `;
 
   try {
@@ -74,6 +76,10 @@ export async function generateMealSuggestions(data: SurveyData): Promise<MealIde
               title: { type: Type.STRING },
               description: { type: Type.STRING },
               benefits: { type: Type.STRING },
+              tags: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING }
+              },
               ingredients: {
                 type: Type.ARRAY,
                 items: {
@@ -101,7 +107,7 @@ export async function generateMealSuggestions(data: SurveyData): Promise<MealIde
                 required: ["calories", "protein", "carbs", "fats"]
               }
             },
-            required: ["title", "description", "benefits", "ingredients", "instructions", "nutrition"]
+            required: ["title", "description", "benefits", "tags", "ingredients", "instructions", "nutrition"]
           }
         }
       }
@@ -118,6 +124,7 @@ export async function generateMealSuggestions(data: SurveyData): Promise<MealIde
         title: "Quinoa & Roasted Vegetable Power Bowl",
         description: "A balanced bowl with colorful roasted veggies and protein-rich quinoa.",
         benefits: "The high fiber content from quinoa and chickpeas helps stabilize blood sugar levels, while the antioxidants in bell peppers and zucchini actively work to reduce systemic inflammation associated with chronic conditions.",
+        tags: ["high-fiber", "anti-inflammatory", "plant-based", "gluten-free"],
         ingredients: [
           { amount: 0.25, unit: "cup", name: "Quinoa" },
           { amount: 0.5, unit: "whole", name: "Bell peppers, sliced" },
@@ -132,6 +139,7 @@ export async function generateMealSuggestions(data: SurveyData): Promise<MealIde
         title: "Lemon Herb Baked Salmon",
         description: "Flaky salmon seasoned with fresh herbs and served with steamed asparagus.",
         benefits: "Salmon provides a potent dose of Omega-3 fatty acids which are crucial for cardiovascular health and reducing joint pain. Asparagus acts as a natural diuretic, aiding in kidney function and reducing bloating.",
+        tags: ["high-protein", "omega-3", "low-carb", "anti-inflammatory"],
         ingredients: [
           { amount: 1, unit: "fillet", name: "Salmon" },
           { amount: 0.5, unit: "bunch", name: "Asparagus" },
@@ -146,6 +154,7 @@ export async function generateMealSuggestions(data: SurveyData): Promise<MealIde
         title: "Slow-Cooker Lentil Stew",
         description: "A hearty, low-effort stew packed with plant-based protein.",
         benefits: "Lentils offer a low glycemic index carbohydrate source that prevents energy crashes and supports metabolic health. Turmeric contains curcumin, a powerful natural anti-inflammatory compound that helps manage chronic pain.",
+        tags: ["low-glycemic", "plant-based", "anti-inflammatory", "high-protein"],
         ingredients: [
           { amount: 0.25, unit: "cup", name: "Red lentils" },
           { amount: 0.5, unit: "whole", name: "Carrots, chopped" },
