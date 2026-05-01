@@ -121,6 +121,69 @@ function Typewriter({ phrases }: { phrases: string[] }) {
   );
 }
 
+const loadingMessages = [
+  "Analyzing your health preferences...",
+  "Selecting the best dietetic-approved ingredients...",
+  "Optimizing for your specific needs...",
+  "Balancing nutritional profiles...",
+  "Crafting your customized meal plan...",
+  "Finalizing your recipes..."
+];
+
+function LoadingSequence() {
+  const [messageIndex, setMessageIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMessageIndex((prev) => Math.min(prev + 1, loadingMessages.length - 1));
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <motion.div
+      key="loading"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 1.05 }}
+      className="flex flex-col items-center justify-center text-center py-20 px-4"
+    >
+      <div className="relative mb-10 w-32 h-32 flex items-center justify-center">
+        {/* Outer rotating ring */}
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+          className="absolute inset-0 rounded-full border-4 border-slate-100 border-t-primary border-r-primary/50"
+        />
+        {/* Inner pulsing circle */}
+        <motion.div
+          animate={{ scale: [0.9, 1.1, 0.9], opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute inset-2 rounded-full bg-primary/10"
+        />
+        {/* Center Icon */}
+        <Utensils className="w-10 h-10 text-primary relative z-10" />
+      </div>
+      
+      <div className="h-16 flex items-center justify-center">
+        <AnimatePresence mode="wait">
+          <motion.h3
+            key={messageIndex}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
+            className="text-xl sm:text-2xl font-display font-bold text-slate-800"
+          >
+            {loadingMessages[messageIndex]}
+          </motion.h3>
+        </AnimatePresence>
+      </div>
+      <p className="text-slate-500 mt-4 text-sm max-w-xs mx-auto">This process requires deep nutritional analysis and may take a few moments.</p>
+    </motion.div>
+  );
+}
+
 export default function App() {
   const [step, setStep] = useState(0);
   const [servings, setServings] = useState<Record<number, number>>({});
@@ -475,16 +538,7 @@ export default function App() {
               <div className={`mx-auto w-full min-h-full flex flex-col justify-center py-12 ${step === 7 ? 'max-w-4xl' : 'max-w-2xl'}`}>
                 <AnimatePresence mode="wait">
                   {isLoading && (
-                    <motion.div
-                      key="loading"
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 1.05 }}
-                      className="flex flex-col items-center justify-center text-center h-full min-h-[400px]"
-                    >
-                      <Loader2 className="w-16 h-16 text-primary animate-spin mb-6" />
-                      <h3 className="text-3xl font-display font-bold text-slate-800 mb-3">Crafting your meal plan...</h3>
-                    </motion.div>
+                    <LoadingSequence />
                   )}
 
                   {!isLoading && step === 0 && (
@@ -554,12 +608,12 @@ export default function App() {
                           />
                         </div>
                       </div>
-                      <div className="flex gap-4 mt-12">
-                        <button onClick={handleBack} className="px-8 py-4 rounded-full font-medium border border-slate-200">Back</button>
+                      <div className="flex flex-col-reverse sm:flex-row gap-4 mt-8 sm:mt-12">
+                        <button onClick={handleBack} className="px-8 py-4 rounded-full font-medium border border-slate-200 w-full sm:w-auto">Back</button>
                         <button 
                           onClick={handleNext} 
                           disabled={!isStepValid()}
-                          className="btn-primary flex-grow"
+                          className="btn-primary flex-grow w-full sm:w-auto"
                         >
                           Continue
                         </button>
@@ -617,12 +671,12 @@ export default function App() {
                         </motion.div>
                       )}
 
-                      <div className="flex gap-4 mt-12">
-                        <button onClick={handleBack} className="px-8 py-4 rounded-full font-medium border border-slate-200">Back</button>
+                      <div className="flex flex-col-reverse sm:flex-row gap-4 mt-8 sm:mt-12">
+                        <button onClick={handleBack} className="px-8 py-4 rounded-full font-medium border border-slate-200 w-full sm:w-auto">Back</button>
                         <button 
                           onClick={handleNext} 
                           disabled={!isStepValid()}
-                          className="btn-primary flex-grow"
+                          className="btn-primary flex-grow w-full sm:w-auto"
                         >
                           Continue
                         </button>
@@ -655,12 +709,12 @@ export default function App() {
                           </button>
                         ))}
                       </div>
-                      <div className="flex gap-4 mt-12">
-                        <button onClick={handleBack} className="px-8 py-4 rounded-full font-medium border border-slate-200">Back</button>
+                      <div className="flex flex-col-reverse sm:flex-row gap-4 mt-8 sm:mt-12">
+                        <button onClick={handleBack} className="px-8 py-4 rounded-full font-medium border border-slate-200 w-full sm:w-auto">Back</button>
                         <button 
                           onClick={handleNext} 
                           disabled={!isStepValid()}
-                          className="btn-primary flex-grow"
+                          className="btn-primary flex-grow w-full sm:w-auto"
                         >
                           Continue
                         </button>
@@ -693,12 +747,12 @@ export default function App() {
                           </button>
                         ))}
                       </div>
-                      <div className="flex gap-4 mt-12">
-                        <button onClick={handleBack} className="px-8 py-4 rounded-full font-medium border border-slate-200">Back</button>
+                      <div className="flex flex-col-reverse sm:flex-row gap-4 mt-8 sm:mt-12">
+                        <button onClick={handleBack} className="px-8 py-4 rounded-full font-medium border border-slate-200 w-full sm:w-auto">Back</button>
                         <button 
                           onClick={handleNext} 
                           disabled={!isStepValid()}
-                          className="btn-primary flex-grow"
+                          className="btn-primary flex-grow w-full sm:w-auto"
                         >
                           Continue
                         </button>
@@ -735,12 +789,12 @@ export default function App() {
                           </button>
                         ))}
                       </div>
-                      <div className="flex gap-4 mt-12">
-                        <button onClick={handleBack} className="px-8 py-4 rounded-full font-medium border border-slate-200">Back</button>
+                      <div className="flex flex-col-reverse sm:flex-row gap-4 mt-8 sm:mt-12">
+                        <button onClick={handleBack} className="px-8 py-4 rounded-full font-medium border border-slate-200 w-full sm:w-auto">Back</button>
                         <button 
                           onClick={handleNext} 
                           disabled={!isStepValid()}
-                          className="btn-primary flex-grow"
+                          className="btn-primary flex-grow w-full sm:w-auto"
                         >
                           Continue
                         </button>
@@ -777,9 +831,9 @@ export default function App() {
                           </button>
                         ))}
                       </div>
-                      <div className="flex gap-4 mt-12">
-                        <button onClick={handleBack} className="px-8 py-4 rounded-full font-medium border border-slate-200">Back</button>
-                        <div className="flex-grow flex flex-col gap-2">
+                      <div className="flex flex-col-reverse sm:flex-row gap-4 mt-8 sm:mt-12">
+                        <button onClick={handleBack} className="px-8 py-4 rounded-full font-medium border border-slate-200 w-full sm:w-auto">Back</button>
+                        <div className="flex-grow flex flex-col gap-2 w-full sm:w-auto">
                           <button 
                             onClick={handleSubmit} 
                             disabled={!isStepValid() || isLoading}
@@ -975,14 +1029,13 @@ export default function App() {
                         </button>
                         <button 
                           onClick={() => {
-                            setStep(2);
-                            setResults(null);
+                            setStep(1); // Navigating to step 1 so they can review their name/email/phone
                             setIsEmailSent(false);
                             setEmailError(null);
                           }}
                           className="px-8 py-4 rounded-full font-medium border border-slate-200 hover:bg-slate-50 transition-colors w-full sm:w-auto"
                         >
-                          Start Over
+                          Edit Preferences
                         </button>
                       </div>
                       {emailError && (
